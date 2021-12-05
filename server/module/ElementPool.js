@@ -1,4 +1,5 @@
 "use strict"
+let ElementManager = require('../manager/ElementManager');
 
 // ================================================================================
 // * ElementPool <SDUDOC Server>
@@ -18,10 +19,6 @@
 function ElementPool(){
     this.initialize.apply(this, arguments);
 }
-// --------------------------------------------------------------------------------
-// * Constant
-// --------------------------------------------------------------------------------
-ElementPool.SAPARATOR = '_';
 // --------------------------------------------------------------------------------
 // * Property
 // --------------------------------------------------------------------------------
@@ -47,40 +44,36 @@ ElementPool.prototype.initializeIndex = function(type){
     this._next_index[type] = this._next_index[type] || 1;
 };
 // --------------------------------------------------------------------------------
-ElementManager.isElementExist = function(type, id){
+ElementPool.prototype.isElementExist = function(type, id){
     return id && this._element_pool_dict[type] && this._element_pool_dict[type][id];
 }
-ElementManager.isFilteredElementExist = function(type, id){
-    return id && this._filtered_pool_dict[type] && this._filtered_pool_dict[type][id];
-}
 // --------------------------------------------------------------------------------
-ElementManager.addElement = function(type, element){
+ElementPool.prototype.addElement = function(type, element){
     this.initializePool(type);
     if (this.isElementExist(type, element.id)) return;
     this._element_pool_dict[type][element.id] = element;
-    element.onAwake.call(element);
 };
-ElementManager.removeElement = function(type, id){
+ElementPool.prototype.removeElement = function(type, id){
     if (!this.isElementExist(type, id)) return;
-    this._element_pool_dict[type][id].onRemove.call(this._element_pool_dict[type][id]);
     delete this._element_pool_dict[type][id];
 };
-ElementManager.updateElement = function(type, id, json_object){
+ElementPool.prototype.updateElement = function(type, id, json_object){
     if (!this.isElementExist(type, id)) return;
     for(let key in json_object) {
-        this._element_pool_dict[type][id][key] = json_object[key];
+        if(key.startsWith("_")){
+            this._element_pool_dict[type][id][key] = json_object[key];
+        }
     }
-    this._element_pool_dict[type][id].onUpdate.call(this._element_pool_dict[type][id]);
 };
 // --------------------------------------------------------------------------------
 // * New Element
 // --------------------------------------------------------------------------------
-ElementManager.getNextIndex = function(type){
+ElementPool.prototype.getNextIndex = function(type){
     this.initializeIndex(type);
-    return type + this.SAPARATOR + (this._next_index[type] ++);
+    return type + ElementManager.SAPARATOR + (this._next_index[type] ++);
 }
-ElementManager.makeElement = function(type, pages){
-    let element = window[type].prototype.newElement();
+ElementPool.prototype.makeElement = function(type, pages){
+    let element = ElementManager.newElement(type);
     arguments[0] = this.getNextIndex(type);
     element.initialize.apply(element, arguments);
     return element;
@@ -98,35 +91,6 @@ ElementManager.getElements = function(type){
 ElementManager.getElement = function(type, id){
     if(!this.isElementExist(type, id)) return null;
     return this._element_pool_dict[type][id];
-}
-// --------------------------------------------------------------------------------
-ElementManager.getAllFilteredElement = function(){
-    return this._filtered_pool_dict;
-}
-ElementManager.getFilteredElements = function(type){
-    if (!this._filtered_pool_dict[type]) return {};
-    return this._filtered_pool_dict[type];
-}
-ElementManager.getFilteredElement = function(type, id){
-    if(!this.isFilteredElementExist(type, id)) return null;
-    return this._filtered_pool_dict[type][id];
-}
-// --------------------------------------------------------------------------------
-// * Filter
-// --------------------------------------------------------------------------------
-ElementManager.isElementInPage = function(element, page_id){
-    return element.pages && element.pages.indexOf(page_id) !== -1;
-}
-ElementManager.updateFilteredDict = function(page_id){
-    this._filtered_pool_dict = {};
-    for(let type in this._element_pool_dict){
-        this._filtered_pool_dict[type] = {}
-        for(let id in this._element_pool_dict[type]){
-            if(this.isElementInPage(this._element_pool_dict[type][id], page_id)){
-                this._filtered_pool_dict[type][id] = this._element_pool_dict[type][id];
-            }
-        }
-    }
 }
 // --------------------------------------------------------------------------------
 // * Save & Export
@@ -158,21 +122,7 @@ ElementManager.saveJson = function(){
     }
     return output;
 }
-ElementManager.exportJson = function(){
-    let output = {};
-    for(let type in this._element_pool_dict){
-        for(let id in this._element_pool_dict[type]){
-            let json_object = this._element_pool_dict[type][id].exportJson();
-            if(json_object) {
-                output[type] = output[type] || [];
-                output[type].push(json_object);
-            }
-        }
-    }
-    return output;
-}
 // ================================================================================
-
 
 // ================================================================================
 module.exports = ElementPool;

@@ -1,51 +1,42 @@
 "use strict"
-let PLUGIN_LIST = require('../plugins.json').PLUGIN_LIST;
 
 // ================================================================================
-// * ElementManager <SDUDOC Server>
+// * Document <SDUDOC Server Plugin>
 // --------------------------------------------------------------------------------
 //   Designer: Lagomoro <Yongrui Wang>
 //   From: SDU <Shandong University>
 //   License: MIT license
 // --------------------------------------------------------------------------------
+//   [Warning] You need SDUDOC Server to apply this plugin.
+// --------------------------------------------------------------------------------
 //   Latest update:
-//   2021/03/10 - Version 1.0.0
+//   2021/04/20 - Version 1.0.0
 //     - Server core
 // ================================================================================
 
 // ================================================================================
-// * ElementManager
+// * Document
 // --------------------------------------------------------------------------------
-function ElementManager(){
-    throw new Error('This is a static class');
+function Document(){
+    this.initialize.apply(this, arguments);
 }
-// --------------------------------------------------------------------------------
-// * Constant
-// --------------------------------------------------------------------------------
-ElementManager.SAPARATOR = '_';
-// --------------------------------------------------------------------------------
-// * Property
-// --------------------------------------------------------------------------------
-ElementManager._element_object = [];
 // --------------------------------------------------------------------------------
 // * Initialize
 // --------------------------------------------------------------------------------
-ElementManager.initialize = function(){
-    this.loadObject();
+Document.prototype.initialize = function(){
+
 };
 // --------------------------------------------------------------------------------
-ElementManager.loadObject = function(){
-    for (let i = 0; i < PLUGIN_LIST.length; i++){
-        let Object = require('../plugin/' + PLUGIN_LIST[i]);
-        this._element_object[Object.TAG] = Object;
-    }
-};
+// * Save & Export
 // --------------------------------------------------------------------------------
-ElementManager.newElement = function(type){
-    return this._element_object[type].newElement();
+Document.prototype.loadJson = function(json_object){
+
+};
+Document.prototype.saveJson = function(){
+
 };
 // ================================================================================
 
 // ================================================================================
-module.exports = ElementManager;
+module.exports = Document;
 // ================================================================================
