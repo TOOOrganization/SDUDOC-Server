@@ -2,7 +2,7 @@
 const Element = require("../object/Element");
 
 // ================================================================================
-// * Character <SDUDOC Server Plugin>
+// * Page <SDUDOC Server Plugin>
 // --------------------------------------------------------------------------------
 //   Designer: Lagomoro <Yongrui Wang>
 //   From: SDU <Shandong University>
@@ -11,68 +11,63 @@ const Element = require("../object/Element");
 //   [Warning] You need SDUDOC Server to apply this plugin.
 // --------------------------------------------------------------------------------
 //   Latest update:
-//   2021/03/19 - Version 1.0.0
-//     - Server core
+//   2021/03/10 - Version 1.0.0
+//     - Initial
 // ================================================================================
 
 // ================================================================================
-// * Character
+// * Page
 // --------------------------------------------------------------------------------
-function Character(){
+function Page(){
   this.initialize.apply(this, arguments);
 }
-Character.prototype = Object.create(Element.prototype);
-Character.prototype.constructor = Character;
+Page.prototype = Object.create(Element.prototype);
+Page.prototype.constructor = Page;
 // --------------------------------------------------------------------------------
 // * Constant
 // --------------------------------------------------------------------------------
-Character.TAG = 'Character';
+Page.TAG = 'Page';
 // --------------------------------------------------------------------------------
 // * Property
 // --------------------------------------------------------------------------------
-Character.prototype._char = '';
-Character.prototype._remark = '';
+Page.prototype._src = '';
 // --------------------------------------------------------------------------------
-Character.prototype._polygon = '';
-Character.prototype._father = '';
+Page.prototype._width = 0;
+Page.prototype._height = 0;
 // --------------------------------------------------------------------------------
 // * Initialize
 // --------------------------------------------------------------------------------
-Character.prototype.initialize = function(id, pages, polygon, char, remark){
-  Element.prototype.initialize.call(this, id, pages);
-
-  this._polygon = polygon;
-  this._char = char;
-  this._remark = remark;
-
-  this._father = '';
+Page.prototype.initialize = function(id, src){
+  Element.prototype.initialize.call(this, id, []);
+  this._src = src;
+  this._width = 0;
+  this._height = 0;
 };
 // --------------------------------------------------------------------------------
 // * New Element
 // --------------------------------------------------------------------------------
-Character.prototype.newElement = function(){
-  return new Character('', [], '', '', '');
+Page.prototype.newElement = function(){
+  return new Page('', '');
 };
 // --------------------------------------------------------------------------------
 // * Save & Export
 // --------------------------------------------------------------------------------
-Character.prototype.loadJson = function(json_object){
+Page.prototype.loadJson = function(json_object){
   Element.prototype.loadJson.call(this, json_object);
-  this._char    = json_object._char    === undefined ? this._char    : json_object._char;
-  this._remark  = json_object._remark  === undefined ? this._remark  : json_object._remark;
-  this._father  = json_object._father  === undefined ? this._father  : json_object._father;
-  this._polygon = json_object._polygon === undefined ? this._polygon : json_object._polygon;
+  this._src    = json_object._src    === undefined ? this._src    : json_object._src;
+  this._width  = json_object._width  === undefined ? this._width  : json_object._width;
+  this._height = json_object._height === undefined ? this._height : json_object._height;
 };
-Character.prototype.saveJson = function(){
+Page.prototype.saveJson = function(){
   let output = Element.prototype.saveJson.call(this);
-  output._char    = this._char;
-  output._remark  = this._remark;
-  output._father  = this._father;
-  output._polygon = this._polygon;
+  delete output._pages;
+  output._src    = this._src;
+  output._width  = this._width;
+  output._height = this._height;
   return output;
 };
 // ================================================================================
 
 // ================================================================================
-module.exports = Character;
+module.exports = Page;
 // ================================================================================

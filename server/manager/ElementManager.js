@@ -1,5 +1,5 @@
 "use strict"
-let PLUGIN_LIST = require('../plugins.json').PLUGIN_LIST;
+const PLUGIN_LIST = require('../plugins.json').PLUGIN_LIST;
 
 // ================================================================================
 // * ElementManager <SDUDOC Server>
@@ -35,9 +35,12 @@ ElementManager.initialize = function(){
 };
 // --------------------------------------------------------------------------------
 ElementManager.loadObject = function(){
+    this._element_object = {};
+    const PageObject = require('../object/Page');
+    this._element_object[PageObject.TAG] = PageObject;
     for (let i = 0; i < PLUGIN_LIST.length; i++){
-        let Object = require('../plugin/' + PLUGIN_LIST[i]);
-        this._element_object[Object.TAG] = Object;
+        const PluginObject = require('../plugin/' + PLUGIN_LIST[i]);
+        this._element_object[PluginObject.TAG] = Object;
     }
 };
 // --------------------------------------------------------------------------------

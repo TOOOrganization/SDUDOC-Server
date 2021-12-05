@@ -1,5 +1,5 @@
 "use strict"
-let PolygonGroup = require("../object/PolygonGroup");
+const PolygonGroup = require("../object/PolygonGroup");
 
 // ================================================================================
 // * Word <SDUDOC Server Plugin>

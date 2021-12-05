@@ -1,5 +1,5 @@
 "use strict"
-let ElementManager = require('../manager/ElementManager');
+const ElementManager = require('../manager/ElementManager');
 
 // ================================================================================
 // * ElementPool <SDUDOC Server>

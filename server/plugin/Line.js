@@ -1,5 +1,5 @@
 "use strict"
-let Element = require("../object/Element");
+const Element = require("../object/Element");
 
 // ================================================================================
 // * Line2D <SDUDOC Server Plugin>
