@@ -1,4 +1,4 @@
-"use strict"
+'use strict'
 const PLUGIN_LIST = require('../plugins.json').PLUGIN_LIST;
 
 // ================================================================================
@@ -40,12 +40,12 @@ ElementManager.loadObject = function(){
     this._element_object[PageObject.TAG] = PageObject;
     for (let i = 0; i < PLUGIN_LIST.length; i++){
         const PluginObject = require('../plugin/' + PLUGIN_LIST[i]);
-        this._element_object[PluginObject.TAG] = Object;
+        this._element_object[PluginObject.TAG] = PluginObject;
     }
 };
 // --------------------------------------------------------------------------------
 ElementManager.newElement = function(type){
-    return this._element_object[type].newElement();
+    return this._element_object[type].prototype.newElement();
 };
 // ================================================================================
 

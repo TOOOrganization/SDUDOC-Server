@@ -1,4 +1,4 @@
-"use strict"
+'use strict'
 const ElementManager = require('../manager/ElementManager');
 
 // ================================================================================
@@ -60,7 +60,7 @@ ElementPool.prototype.removeElement = function(type, id){
 ElementPool.prototype.updateElement = function(type, id, json_object){
     if (!this.isElementExist(type, id)) return;
     for(let key in json_object) {
-        if(key.startsWith("_")){
+        if(key.startsWith('_')){
             this._element_pool_dict[type][id][key] = json_object[key];
         }
     }
@@ -81,34 +81,34 @@ ElementPool.prototype.makeElement = function(type, pages){
 // --------------------------------------------------------------------------------
 // * Get Element
 // --------------------------------------------------------------------------------
-ElementManager.getAllElement = function(){
+ElementPool.prototype.getAllElement = function(){
     return this._element_pool_dict;
 }
-ElementManager.getElements = function(type){
+ElementPool.prototype.getElements = function(type){
     if (!this._element_pool_dict[type]) return {};
     return this._element_pool_dict[type];
 }
-ElementManager.getElement = function(type, id){
+ElementPool.prototype.getElement = function(type, id){
     if(!this.isElementExist(type, id)) return null;
     return this._element_pool_dict[type][id];
 }
 // --------------------------------------------------------------------------------
 // * Save & Export
 // --------------------------------------------------------------------------------
-ElementManager.loadJson = function(json_object){
+ElementPool.prototype.loadJson = function(json_object){
     this._next_index = json_object.Index;
 
     this._element_pool_dict = {};
     for(let type in json_object.Data){
         this._element_pool_dict[type] = {};
         for(let key in json_object.Data[type]){
-            let element = window[type].prototype.newElement();
+            let element = ElementManager.newElement(type);
             element.loadJson(json_object.Data[type][key]);
             this._element_pool_dict[type][element.id] = element;
         }
     }
 }
-ElementManager.saveJson = function(){
+ElementPool.prototype.saveJson = function(){
     let output = {};
 
     output.Index = this._next_index;

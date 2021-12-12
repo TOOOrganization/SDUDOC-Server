@@ -1,6 +1,8 @@
-"use strict"
+'use strict'
+const Document = require('../core/Document')
+const http = require('http');
+const fs = require('fs');
 const Server = require("../Server");
-const dgram = require("dgram");
 
 // ================================================================================
 // * SubServer <SDUDOC Server Plugin>
@@ -28,7 +30,7 @@ function SubServer(){
 SubServer.prototype._filename = null;
 // --------------------------------------------------------------------------------
 SubServer.prototype._port = null;
-SubServer.prototype._udp_server = null;
+SubServer.prototype._http_server = null;
 // --------------------------------------------------------------------------------
 SubServer.prototype._document = null;
 // --------------------------------------------------------------------------------
@@ -39,33 +41,52 @@ SubServer.prototype._usermap = {};
 SubServer.prototype.initialize = function(filename){
     this.clear();
     this.load(filename);
-    this.startSocket();
 };
 // --------------------------------------------------------------------------------
 SubServer.prototype.clear = function(){
     this._filename = null;
     this._port = null;
-    this._udp_server = null;
+    this._http_server = null;
 };
-SubServer.prototype.startSocket = function(){
-    this._udp_server = dgram.createSocket('udp4');
-    this._port = this._udp_server.address().port;
-    this._udp_server.on('listening', function () {
-        this.onSocketListening();
-
+SubServer.prototype.start = async function(){
+    let that = this;
+    return new Promise((resolve) => {
+        that._http_server = http.createServer();
+        that._http_server.on('listening', function () {
+            that._port = that._http_server.address().port;
+            that.onHttpListening();
+            resolve(that._port);
+        });
+        that._http_server.on('request', function(request, response){
+            let params = '';
+            request.on('data', function(param){
+                params += param;
+            });
+            request.on('end',async function(){
+                response.setHeader('Access-Control-Allow-Origin', '*');
+                response.setHeader('Access-Control-Allow-Methods', 'POST, GET, PUT, OPTIONS, DELETE');
+                response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+                response.writeHead(200, {
+                    'Content-Type' : 'application/json'
+                });
+                if(params){
+                    let cs_msg = JSON.parse(params);
+                    console.log(cs_msg);
+                    let sc_msg = {}
+                    let code = await that.onHttpRequest(cs_msg, sc_msg);
+                    console.log(sc_msg);
+                    let data = { code: code, sc_msg: sc_msg, }
+                    response.write(JSON.stringify(data));
+                }
+                response.end();
+            });
+        });
+        that._http_server.listen(0);
     });
-    this._udp_server.on('message', function (cs_buffer, c_info) {
-        let cs_msg = JSON.parse(cs_buffer.toString());
-        this.onSocketMessage(cs_msg, c_info);
-    });
-    this._udp_server.on('error', function (error) {
-        this.onSocketError(error);
-    });
-    this._udp_server.bind(0);
 };
-SubServer.prototype.shutdown = function(){
+SubServer.prototype.stop = function(){
     this.save();
-    this._udp_server.close();
+    this._http_server.close();
 }
 // --------------------------------------------------------------------------------
 // * Getter & Setter
@@ -73,6 +94,12 @@ SubServer.prototype.shutdown = function(){
 Object.defineProperty(SubServer.prototype, 'port', {
     get: function() {
         return this._port;
+    },
+    configurable: true
+});
+Object.defineProperty(SubServer.prototype, 'filename', {
+    get: function() {
+        return this._filename;
     },
     configurable: true
 });
@@ -107,45 +134,56 @@ SubServer.prototype.removeUser = function(username){
         delete this._usermap[username];
     }
     if (this.noUser()){
+        const Server = require('../Server');
         Server.removeSubServer(this._filename);
     }
 };
 // --------------------------------------------------------------------------------
-// * Socket Event
+// * Http Event
 // --------------------------------------------------------------------------------
-SubServer.prototype.onSocketListening = function(){
-    console.log('SDUDOC SubServer <' + this._filename + '> start on port:' + Server.PORT + ' <udp4>');
+SubServer.prototype.onHttpListening = function(){
+    console.log('SDUDOC Sub Server start on port: ' + this._port);
 };
-SubServer.prototype.onSocketMessage = function(cs_msg, c_info){
-    let sc_msg = this.processMessage(cs_msg);
-    let sc_buffer = JSON.stringify(sc_msg);
-    this._udp_server.send(sc_buffer, 0, sc_buffer.length, c_info.port, c_info.address);
-};
-SubServer.prototype.onSocketError = function(error){
-    console.log(error);
+SubServer.prototype.onHttpRequest = async function(cs_msg, sc_msg){
+    return await this.processMessage(cs_msg, sc_msg);
 };
 // --------------------------------------------------------------------------------
 // * Process Message
 // --------------------------------------------------------------------------------
-SubServer.prototype.processMessage = function(cs_msg){
+SubServer.prototype.processMessage = async function(cs_msg, sc_msg){
     let msg_id = cs_msg.msgid;
     let process_func = this['msg_' + msg_id];
-    return (!process_func || typeof process_func !== 'function') ? {} : process_func(cs_msg);
+    return (!process_func || typeof process_func !== 'function') ? {} : await process_func(cs_msg, sc_msg);
 };
 // --------------------------------------------------------------------------------
-SubServer.prototype.msg_LOGIN_REQ = function(cs_msg){
-    let sc_msg = {}
+SubServer.prototype.msg_LOGIN_REQ = async function(cs_msg, sc_msg){
     sc_msg.msgid = 'LOGIN_RSP';
-    return sc_msg;
+    return 200;
 };
 // --------------------------------------------------------------------------------
 // * Save & Export
 // --------------------------------------------------------------------------------
 SubServer.prototype.load = function(filename){
+    this._document = new Document();
+    this._filename = filename;
 
+    const Server = require('../Server');
+    let file_data = fs.readFileSync(Server.DOCUMENT_PATH + this._filename);
+    let json_object = JSON.parse(String(file_data));
+    this.loadJson(json_object);
 };
 SubServer.prototype.save = function(){
-
+    let json_object = this.saveJson();
+    let file_data = JSON.stringify(json_object);
+    const Server = require('../Server');
+    fs.writeFileSync(Server.DOCUMENT_PATH + this._filename + '1', file_data);
+};
+// --------------------------------------------------------------------------------
+SubServer.prototype.loadJson = function(json_object){
+    this._document.loadJson(json_object);
+};
+SubServer.prototype.saveJson = function(){
+    return this._document.saveJson();
 };
 // ================================================================================
 

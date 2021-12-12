@@ -1,5 +1,5 @@
-"use strict"
-const PolygonGroup = require("../object/PolygonGroup");
+'use strict'
+const PolygonGroup = require('../object/PolygonGroup');
 
 // ================================================================================
 // * Sentence <SDUDOC Server Plugin>

@@ -1,8 +1,8 @@
-"use strict"
-const Header = require("../core/Header");
-const PageArray = require("../core/PageArray");
-const ElementPool = require("../core/ElementPool");
-const Page = require("../object/Page");
+'use strict'
+const Header = require('../core/Header');
+const PageArray = require('../core/PageArray');
+const ElementPool = require('../core/ElementPool');
+const Page = require('../object/Page');
 
 // ================================================================================
 // * Document <SDUDOC Server Plugin>
@@ -101,44 +101,44 @@ Document.prototype.addAfterCurrentPage = async function(filename, src){
     await this.afterChangePage();
     Engine.progress(100);
 }
-DocumentManager.clearCurrentPage = function(){
+Document.clearCurrentPage = function(){
     let page = this.getCurrentPageObject();
     page.onRemove.call(page);
     this.afterChangeElement();
 }
-DocumentManager.removeCurrentPage = async function(){
+Document.removeCurrentPage = async function(){
     let page = this._page_array.removeCurrentPage();
     this.removeElement(Page.TAG, page);
     await this.afterChangePage();
 }
 // --------------------------------------------------------------------------------
-DocumentManager.getCurrentPage = function(){
+Document.getCurrentPage = function(){
     return this._page_array.getCurrentPage();
 }
-DocumentManager.getCurrentPageId = function(){
+Document.getCurrentPageId = function(){
     return this._page_array.getCurrentPageId();
 }
-DocumentManager.getCurrentPageObject = function(){
+Document.getCurrentPageObject = function(){
     return ElementManager.getElement(Page.TAG, this.getCurrentPageId());
 }
 // --------------------------------------------------------------------------------
-DocumentManager.setCurrentPageIndex = async function(index){
+Document.setCurrentPageIndex = async function(index){
     await this.setCurrentPage(index + 1);
 }
-DocumentManager.setCurrentPage = async function(index){
+Document.setCurrentPage = async function(index){
     this._page_array.setCurrentPage(index);
     await this.afterChangePage();
 }
 // --------------------------------------------------------------------------------
-DocumentManager.moveCurrentPageForward = async function(){
+Document.moveCurrentPageForward = async function(){
     this._page_array.moveCurrentPageForward();
     await this.afterChangePage();
 }
-DocumentManager.moveCurrentPageBackward = async function(){
+Document.moveCurrentPageBackward = async function(){
     this._page_array.moveCurrentPageBackward();
     await this.afterChangePage();
 }
-DocumentManager.moveCurrentPageTo = async function(target){
+Document.moveCurrentPageTo = async function(target){
     this._page_array.moveCurrentPageTo(target);
     await this.afterChangePage();
 }
