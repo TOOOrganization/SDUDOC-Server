@@ -1,6 +1,6 @@
 "use strict"
 const SubServer = require("./core/SubServer");
-const dgram = require('dgram');
+const http = require('http');
 
 // ================================================================================
 // * Server <SDUDOC Server Plugin>
@@ -25,11 +25,12 @@ function Server(){
 // --------------------------------------------------------------------------------
 // * Constant
 // --------------------------------------------------------------------------------
-Server.PORT = 6000;
+Server.PORT = 7000;
 // --------------------------------------------------------------------------------
 // * Property
 // --------------------------------------------------------------------------------
-Server._udp_server = null;
+Server._http_server = null;
+// --------------------------------------------------------------------------------
 Server._sub_server_map = {};
 // --------------------------------------------------------------------------------
 // * Initialize
@@ -38,67 +39,92 @@ Server.initialize = function(){
     this.clear();
     this.startSocket();
 };
+// --------------------------------------------------------------------------------
 Server.clear = function(){
-    this._udp_server = null;
+    this._http_server = null;
     this._sub_server_map = {};
 };
 Server.startSocket = function(){
-    this._udp_server = dgram.createSocket('udp4');
-    this._udp_server.bind(Server.PORT);
-    this._udp_server.on('listening', function () {
-        Server.onSocketListening();
+    this._http_server = http.createServer();
+    this._http_server.on('listening', function () {
+        Server.onHttpListening();
     });
-    this._udp_server.on('message', function (cs_buffer, c_info) {
-        let cs_msg = JSON.parse(cs_buffer.toString());
-        Server.onSocketMessage(cs_msg, c_info);
+    this._http_server.on('request', function(request, response){
+        let params = '';
+        request.on('data', function(param){
+            params += param;
+        });
+        request.on('end',function(){
+            response.setHeader('Access-Control-Allow-Origin', '*');
+            response.setHeader('Access-Control-Allow-Methods', 'POST, GET, PUT, OPTIONS, DELETE');
+            response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+            response.writeHead(200, {
+                'Content-Type' : 'application/json'
+            });
+            if(params){
+                let cs_msg = JSON.parse(params);
+                console.log(cs_msg);
+                let sc_msg = {}
+                let code = Server.onHttpRequest(cs_msg, sc_msg);
+                let data = { code: code, sc_msg: sc_msg, }
+                response.write(JSON.stringify(data));
+            }
+            response.end();
+        });
     });
-    this._udp_server.on('error', function (error) {
-        Server.onSocketError(error);
-    });
+    this._http_server.listen(Server.PORT);
+};
+// --------------------------------------------------------------------------------
+// * Sub Server
+// --------------------------------------------------------------------------------
+Server.addSubServer = function(filename){
+    if (!this._sub_server_map[filename]) {
+        this._sub_server_map[filename] = new SubServer(filename);
+    }
+};
+Server.removeSubServer = function(filename){
+    let sub_server = this._sub_server_map[filename];
+    if (sub_server && sub_server.noUser()) {
+        sub_server.shutdown();
+        delete this._sub_server_map[filename];
+    }
 };
 // --------------------------------------------------------------------------------
 // * Socket Event
 // --------------------------------------------------------------------------------
-Server.onSocketListening = function(){
-    console.log('SDUDOC Server start on port:' + Server.PORT + ' <udp4>');
+Server.onHttpListening = function(){
+    console.log('SDUDOC Server start on port: ' + Server.PORT);
 };
-Server.onSocketMessage = function(cs_msg, c_info){
-    let sc_msg = this.processMessage(cs_msg);
-    let sc_buffer = JSON.stringify(sc_msg);
-    this._udp_server.send(sc_buffer, 0, sc_buffer.length, c_info.port, c_info.address);
-};
-Server.onSocketError = function(error){
-    console.log(error);
+Server.onHttpRequest = function(cs_msg, sc_msg){
+    return this.processMessage(cs_msg, sc_msg);
 };
 // --------------------------------------------------------------------------------
 // * Process Message
 // --------------------------------------------------------------------------------
-Server.processMessage = function(cs_msg){
+Server.processMessage = function(cs_msg, sc_msg){
     let msg_id = cs_msg.msg_id;
     let process_func = Server['msg_' + msg_id];
-    return (!process_func || typeof process_func !== 'function') ? {} : process_func(cs_msg);
+    return (!process_func || typeof process_func !== 'function') ? {} : process_func(cs_msg, sc_msg);
 };
 // --------------------------------------------------------------------------------
-Server.msg_LOGIN_REQ = function(cs_msg){
-    let sc_msg = {}
-    sc_msg.msgid = 'LOGIN_RSP';
-    return sc_msg;
+Server.msg_LOGIN_REQ = function(cs_msg, sc_msg){
+    sc_msg.msg_id = 'LOGIN_RSP';
+    sc_msg.token = cs_msg.username;
+    return 200;
 };
-Server.msg_LOGOUT_REQ = function(cs_msg){
-    let sc_msg = {}
-    sc_msg.msgid = 'LOGOUT_RSP';
-    return sc_msg;
+Server.msg_LOGOUT_REQ = function(cs_msg, sc_msg){
+    sc_msg.msg_id = 'LOGOUT_RSP';
+    return 200;
 };
 Server.msg_DOCUMENT_OPEN_REQ = function(cs_msg){
     if (!this._sub_server_map[cs_msg.filename]){
-        this._sub_server_map[cs_msg.filename] = new SubServer();
-        this._sub_server_map[cs_msg.filename].load(cs_msg.filename);
+        this.addSubServer(cs_msg.filename);
     }
     let sub_server = this._sub_server_map[cs_msg.filename];
     sub_server.addUser(cs_msg.username);
 
     let sc_msg = {}
-    sc_msg.msgid = 'DOCUMENT_OPEN_RSP';
+    sc_msg.msg_id = 'DOCUMENT_OPEN_RSP';
     sc_msg.port = sub_server.port;
     sc_msg.document = sub_server.save();
     return sc_msg;
@@ -107,14 +133,10 @@ Server.msg_CS_DOCUMENT_CLOSE_REQ = function(cs_msg){
     if (this._sub_server_map[cs_msg.filename]){
         let sub_server = this._sub_server_map[cs_msg.filename];
         sub_server.removeUser(cs_msg.username);
-        if (sub_server.noUser()) {
-            sub_server.close();
-            delete this._sub_server_map[cs_msg.filename];
-        }
     }
 
     let sc_msg = {}
-    sc_msg.msgid = 'DOCUMENT_CLOSE_RSP';
+    sc_msg.msg_id = 'DOCUMENT_CLOSE_RSP';
     return sc_msg;
 };
 // ================================================================================
