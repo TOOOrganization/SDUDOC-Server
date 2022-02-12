@@ -111,7 +111,7 @@ Server.onHttpRequest = async function(cs_msg, sc_msg){
 Server.processMessage = async function (cs_msg, sc_msg) {
     let msg_id = cs_msg.msg_id;
     let process_func = Server['msg_' + msg_id];
-    return (!process_func || typeof process_func !== 'function') ? {} : await process_func(cs_msg, sc_msg);
+    return (!process_func || typeof process_func !== 'function') ? 400 : await process_func(cs_msg, sc_msg);
 };
 // --------------------------------------------------------------------------------
 Server.msg_LOGIN_REQ = async function(cs_msg, sc_msg){

@@ -44,6 +44,8 @@ ElementManager.loadObject = function(){
     }
 };
 // --------------------------------------------------------------------------------
+// * New Element
+// --------------------------------------------------------------------------------
 ElementManager.newElement = function(type){
     return this._element_object[type].prototype.newElement();
 };

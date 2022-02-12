@@ -151,13 +151,22 @@ SubServer.prototype.onHttpRequest = async function(cs_msg, sc_msg){
 // * Process Message
 // --------------------------------------------------------------------------------
 SubServer.prototype.processMessage = async function(cs_msg, sc_msg){
-    let msg_id = cs_msg.msgid;
-    let process_func = this['msg_' + msg_id];
-    return (!process_func || typeof process_func !== 'function') ? {} : await process_func(cs_msg, sc_msg);
+    let msg_id = cs_msg.msg_id;
+    let process_func = Reflect.getPrototypeOf(this)['msg_' + msg_id].bind(this);
+    return (!process_func || typeof process_func !== 'function') ? 400 : await process_func(cs_msg, sc_msg);
 };
 // --------------------------------------------------------------------------------
-SubServer.prototype.msg_LOGIN_REQ = async function(cs_msg, sc_msg){
-    sc_msg.msgid = 'LOGIN_RSP';
+SubServer.prototype.msg_SYNC_REQ = async function(cs_msg, sc_msg){
+    this._document.loadJson(cs_msg.json);
+    sc_msg.msg_id = 'SYNC_RSP';
+    sc_msg.document = this.save();
+    return 200;
+};
+SubServer.prototype.msg_NEW_PAGE_REQ = async function(cs_msg, sc_msg){
+    this._document.loadJson(cs_msg.json);
+    sc_msg.msg_id = 'NEW_PAGE_RSP';
+    sc_msg.document = this.save();
+    sc_msg.src = cs_msg.base64;
     return 200;
 };
 // --------------------------------------------------------------------------------
@@ -168,6 +177,7 @@ SubServer.prototype.load = function(filename){
     this._filename = filename;
 
     const Server = require('../Server');
+    if(!fs.existsSync(Server.DOCUMENT_PATH + this._filename)) this.save();
     let file_data = fs.readFileSync(Server.DOCUMENT_PATH + this._filename);
     let json_object = JSON.parse(String(file_data));
     this.loadJson(json_object);
@@ -176,7 +186,8 @@ SubServer.prototype.save = function(){
     let json_object = this.saveJson();
     let file_data = JSON.stringify(json_object);
     const Server = require('../Server');
-    fs.writeFileSync(Server.DOCUMENT_PATH + this._filename + '1', file_data);
+    fs.writeFileSync(Server.DOCUMENT_PATH + this._filename, file_data);
+    return json_object;
 };
 // --------------------------------------------------------------------------------
 SubServer.prototype.loadJson = function(json_object){

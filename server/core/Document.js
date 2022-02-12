@@ -3,6 +3,7 @@ const Header = require('../core/Header');
 const PageArray = require('../core/PageArray');
 const ElementPool = require('../core/ElementPool');
 const Page = require('../object/Page');
+const ElementManager = require("../manager/ElementManager");
 
 // ================================================================================
 // * Document <SDUDOC Server Plugin>
@@ -86,6 +87,11 @@ Document.prototype.updateElement = function(type, id, data){
 Document.prototype.addAfterPage = function(index, page_object){
     this.addElement(Page.TAG, page_object);
     this._page_array.addAfterCurrentPage(page_object.id);
+}
+Document.prototype.addAfterPage = function(index, src){
+    let page = this._element_pool.makeElement(Page.TAG, src);
+    this.addElement(Page.TAG, page);
+    this._page_array.addAfterPage(index, page);
 }
 Document.prototype.removePage = function(page_id){
     this._page_array.removePage(page_id);
